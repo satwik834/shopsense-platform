@@ -51,6 +51,14 @@ export const api = {
     });
   },
 
+  registerCustomer: async (customerData) => {
+    return request(`${API_BASE}/auth/register-customer`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(customerData),
+    });
+  },
+
   logout: async () => {
     return request(`${API_BASE}/auth/logout`, {
       method: 'POST',

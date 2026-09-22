@@ -4,11 +4,13 @@ import { ShieldCheck, Store, Lock, Mail, ArrowRight, UserPlus, LogIn, AlertCircl
 
 export default function Login({ onLoginSuccess }) {
   const [mode, setMode] = useState('login'); // 'login' or 'register'
+  const [registerType, setRegisterType] = useState('customer'); // 'customer' or 'vendor'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [storeName, setStoreName] = useState('');
   const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -38,19 +40,35 @@ export default function Login({ onLoginSuccess }) {
     try {
       setLoading(true);
       setMessage(null);
-      await api.registerVendor({
-        name,
-        store_name: storeName || name,
-        email,
-        password,
-        phone,
-        description
-      });
 
-      setMessage({
-        type: 'success',
-        text: 'Vendor registration submitted! Your account status is PENDING approval by an admin. You will be able to log in once approved.'
-      });
+      if (registerType === 'customer') {
+        await api.registerCustomer({
+          name,
+          email,
+          password,
+          phone: phone || undefined,
+          address: address || undefined
+        });
+
+        setMessage({
+          type: 'success',
+          text: 'Customer account registered successfully! You can now sign in.'
+        });
+      } else {
+        await api.registerVendor({
+          name,
+          store_name: storeName || name,
+          email,
+          password,
+          phone: phone || undefined,
+          description: description || undefined
+        });
+
+        setMessage({
+          type: 'success',
+          text: 'Vendor registration submitted! Your account status is PENDING approval by an administrator. You will be able to sign in once approved.'
+        });
+      }
 
       setMode('login');
       setPassword('');
@@ -59,12 +77,6 @@ export default function Login({ onLoginSuccess }) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const quickFill = (userEmail, userPassword) => {
-    setEmail(userEmail);
-    setPassword(userPassword);
-    setMode('login');
   };
 
   return (
@@ -82,6 +94,7 @@ export default function Login({ onLoginSuccess }) {
         {/* Mode Selector */}
         <div className="grid grid-cols-2 p-1 bg-[#090a0f] border border-zinc-800 rounded-xl">
           <button
+            type="button"
             onClick={() => { setMode('login'); setMessage(null); }}
             className={`py-2 text-xs font-semibold rounded-lg transition-all ${
               mode === 'login'
@@ -92,6 +105,7 @@ export default function Login({ onLoginSuccess }) {
             Sign In
           </button>
           <button
+            type="button"
             onClick={() => { setMode('register'); setMessage(null); }}
             className={`py-2 text-xs font-semibold rounded-lg transition-all ${
               mode === 'register'
@@ -99,7 +113,7 @@ export default function Login({ onLoginSuccess }) {
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
-            Vendor Register
+            Create Account
           </button>
         </div>
 
@@ -166,104 +180,205 @@ export default function Login({ onLoginSuccess }) {
             </button>
           </form>
         ) : (
-          <form onSubmit={handleRegister} className="space-y-3.5">
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
-                BUSINESS LEGAL NAME *
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Apex Dynamics Ltd."
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full bg-[#090a0f] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none transition-colors"
-                required
-              />
+          <div className="space-y-4">
+            {/* Account Type Selector */}
+            <div className="grid grid-cols-2 p-1 bg-[#090a0f] border border-zinc-800/80 rounded-xl">
+              <button
+                type="button"
+                onClick={() => { setRegisterType('customer'); setMessage(null); }}
+                className={`py-2 text-xs font-semibold rounded-lg transition-all ${
+                  registerType === 'customer'
+                    ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                Customer Account
+              </button>
+              <button
+                type="button"
+                onClick={() => { setRegisterType('vendor'); setMessage(null); }}
+                className={`py-2 text-xs font-semibold rounded-lg transition-all ${
+                  registerType === 'vendor'
+                    ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                Vendor Account
+              </button>
             </div>
 
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
-                STORE NAME
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Apex Tech Store"
-                value={storeName}
-                onChange={(e) => setStoreName(e.target.value)}
-                className="w-full bg-[#090a0f] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none transition-colors"
-              />
-            </div>
+            {registerType === 'customer' ? (
+              <form onSubmit={handleRegister} className="space-y-3">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                    FULL NAME *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. John Doe"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full bg-[#090a0f] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none transition-colors"
+                    required
+                  />
+                </div>
 
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
-                CORPORATE EMAIL *
-              </label>
-              <input
-                type="email"
-                placeholder="contact@apex.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-[#090a0f] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none transition-colors"
-                required
-              />
-            </div>
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                    EMAIL ADDRESS *
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="john@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-[#090a0f] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none transition-colors"
+                    required
+                  />
+                </div>
 
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
-                PASSWORD *
-              </label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-[#090a0f] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none transition-colors"
-                required
-              />
-            </div>
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                    PASSWORD *
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-[#090a0f] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none transition-colors"
+                    required
+                  />
+                </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
-            >
-              <span>{loading ? 'Submitting Application...' : 'Register Vendor (Requires Approval)'}</span>
-            </button>
-          </form>
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                    PHONE NUMBER
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="+1 555-0199"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full bg-[#090a0f] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                    SHIPPING ADDRESS
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Street address, City, State"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="w-full bg-[#090a0f] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none transition-colors"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
+                >
+                  <span>{loading ? 'Creating Account...' : 'Register Customer Account'}</span>
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleRegister} className="space-y-3">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                    BUSINESS LEGAL NAME *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Apex Dynamics Ltd."
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full bg-[#090a0f] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none transition-colors"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                    STORE NAME
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Apex Tech Store"
+                    value={storeName}
+                    onChange={(e) => setStoreName(e.target.value)}
+                    className="w-full bg-[#090a0f] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                    CORPORATE EMAIL *
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="contact@apex.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-[#090a0f] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none transition-colors"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                    PASSWORD *
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-[#090a0f] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none transition-colors"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                    PHONE NUMBER
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="+1 555-0199"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full bg-[#090a0f] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                    STORE / BUSINESS DESCRIPTION
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Brief description of your product catalog"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-full bg-[#090a0f] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none transition-colors"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
+                >
+                  <span>{loading ? 'Submitting Application...' : 'Register Vendor (Requires Approval)'}</span>
+                </button>
+              </form>
+            )}
+          </div>
         )}
-
-        {/* Quick Demo Logins */}
-        <div className="pt-4 border-t border-zinc-800/80">
-          <div className="text-[11px] font-mono uppercase text-zinc-500 text-center mb-3">
-            Quick Demo Accounts
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <button
-              onClick={() => quickFill('admin@shopsense.com', 'adminpassword123')}
-              className="px-2 py-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-indigo-500 text-[11px] text-zinc-300 font-mono transition-colors text-center"
-            >
-              Admin
-            </button>
-            <button
-              onClick={() => quickFill('contact@apex.com', 'vendorpass123')}
-              className="px-2 py-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-emerald-500 text-[11px] text-emerald-400 font-mono transition-colors text-center"
-            >
-              Vendor (Approved)
-            </button>
-            <button
-              onClick={() => quickFill('apply@freshfoods.com', 'vendorpass123')}
-              className="px-2 py-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-amber-500 text-[11px] text-amber-400 font-mono transition-colors text-center"
-            >
-              Vendor (Pending)
-            </button>
-            <button
-              onClick={() => quickFill('ananya.sharma@example.com', 'customerpass123')}
-              className="px-2 py-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-purple-500 text-[11px] text-purple-400 font-mono transition-colors text-center"
-            >
-              Customer
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );
